@@ -220,216 +220,187 @@ graph TD
 
 ---
 
-## 8. MVP 產出與格式規範（對齊 mvp_tech_spec.md 與 development_progress_report.md）
+## 8. MVP 產出與格式規範
 
-為避免 MVP 規劃與執行混亂，以下規範明確定義 MVP 階段的文件清單、檔案路徑、命名規則、必要章節與驗收標準，並提供可直接複製使用的骨架模板（skeleton）。
+> **核心原則：** 為確保 MVP 階段的速度與品質，文件產出將精簡為三份核心文件。本節範本為強制性規範，旨在確保規劃、執行與上線之間的一致性，並作為 LLM 生成程式碼時最關鍵的上下文。
 
-### 8.1 文件清單與命名/路徑
-- 必備文件：
-  - `docs/planning/mvp_tech_spec.md`（MVP 技術規格，唯一開發依據）
-  - `docs/dev/development_progress_report.md`（開發進度報告，雙週/每迭代更新）
-  - `docs/launch/mvp_launch_checklist.md`（MVP 輕量上線檢查清單）
-- 檔名規範：
-  - 檔名採用 kebab-case，置於上列路徑下；同一文件內保留版本/日期於頁首中。
-- 頁首中必含的中英中繼資料（以 quote 形態呈現）：
-  - `Version`、`Date`、`Status`、`Mode`、`Owner(s)`、`Reviewers`（如有）
+### 8.1 核心文件總覽 (Core MVP Documents)
 
-### 8.2 MVP Tech Spec 結構規範（docs/planning/mvp_tech_spec.md）
-- 目的：作為開發與審查的唯一契約。若與其他文檔衝突，以此為準。
-- 必要章節與順序：
-  1. 問題陳述與目標用戶（最多 3 條 KPI）
-  2. 高層設計（一句話架構 + 1 張組件圖）
-  3. 必要 API 契約（僅核心端點；以標準表格/區塊呈現）
-  4. 資料表 Schema（核心 1-2 張表）
-  5. 風險與手動替代方案（技術/業務/運維，表格化）
-  6. MVP 迭代計劃（3 個迭代內可交付）
-  7. 部署與監控（最小可運營要求 + 監控指標）
-  8. Gate 通過標準（可上線/可繼續的客觀條件）
-  9. 前端範圍與路由/頁面列表（必填：主要頁面、路由、依賴 API、核心組件）
-- API 契約最小格式（任選表格或 http 區塊表示法，需一致）：
+| 文件 (File) | 目的 (Purpose) | 主要負責人 (Owner) |
+| :--- | :--- | :--- |
+| `docs/planning/mvp_tech_spec.md` | 定義 MVP 的「做什麼」與「如何做」，是開發的唯一契約。 | TL / PM |
+| `docs/dev/development_progress_report.md` | 透明化開發進度、風險與指標，是團隊同步與決策的依據。 | TL / DEV |
+| `docs/launch/mvp_launch_checklist.md` | 確保上線前的最小品質與運維準備，是發布的最後門禁。 | SRE / OPS / TL |
 
-```markdown
-| 方法 | 路徑 | 說明 | 請求體/查詢參數 | 回應體 | 錯誤碼 |
-| :-- | :-- | :-- | :-- | :-- | :-- |
-| POST | /api/v1/documents/upload | 上傳 PDF | file: multipart；type: enum | { document_id, status } | 400/401/500 |
-```
+### 8.2 通用規範 (General Specifications)
 
-或：
+#### 8.2.1 命名與路徑 (Naming & Location)
+- 所有 MVP 文件 **必須 (MUST)** 存放於上述指定路徑。
+- 檔名 **必須 (MUST)** 使用 `kebab-case` 格式 (例如 `mvp-tech-spec.md`)。
 
-```http
-POST /api/v1/documents/upload
-Content-Type: multipart/form-data
+#### 8.2.2 文件標頭 (Metadata Header)
+- 每份文件開頭 **必須 (MUST)** 包含中繼資料標頭，以利追蹤。
+- **範本:**
+  ```markdown
+  > Version: 1.0.0
+  > Date: YYYY-MM-DD
+  > Status: Draft | Active | Deprecated
+  > Owner(s): [姓名 (角色)]
+  > Reviewers: [姓名 (角色)]
+  ```
 
-Request:
-- file: PDF
-- type: "exam_questions" | "legal_texts"
+#### 8.2.3 一致性規則 (Consistency Rules)
+- **章節順序固定：** 文件內的章節順序 **不應 (SHOULD NOT)** 隨意更動。
+- **格式統一：** API 契約與 Schema **必須 (MUST)** 在單一文件中風格一致 (擇一呈現)。
+- **命名一致：** 指標/KPI 名稱 **必須 (MUST)** 在所有文件中保持一致 (例如，統一使用 `API Response Time`)。
 
-Response:
-{ "document_id": "uuid", "status": "processing" }
-```
-
-- Schema 最小格式（可用 SQL 片段或欄位表格，需列出 PK/索引關鍵）：
-
-```sql
-CREATE TABLE documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  filename VARCHAR(255) NOT NULL,
-  processing_status VARCHAR(20) DEFAULT 'uploaded',
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-- 接受標準（Tech Spec DoD）：
-  - KPI ≤ 3 且可量測；高層設計與組件圖存在且一致
-  - 核心 API 與 Schema 完整且相互對齊
-  - 前端頁面/路由與 API 對應關係表已提供，命名一致
-  - 風險表含替代方案；迭代計劃可在 6 週內交付
-  - 部署與監控最小要求具體可行；Gate 條件可客觀核驗
-
-- 與現有內容對齊說明：當前 `docs/planning/mvp_tech_spec.md` 已具備必要章節。後續新增端點或資料表時，應保持上述順序與格式，避免新增隨意章節名稱。
-
-- Tech Spec 骨架（可複製改寫）：
-
-```markdown
-# [專案名稱] - MVP Tech Spec
-> Version: x.y  
-> Date: YYYY-MM-DD  
-> Status: Draft  
-> Mode: MVP 快速迭代  
-> Owner(s): 姓名A（角色）  
-> Reviewers: TL/ARCH/PM  
-
-## 1. 問題陳述與目標用戶
-- 核心問題：...
-- 目標用戶：主要/次要
-- 成功指標（≤3）：[KPI-1]、[KPI-2]、[KPI-3]
-
-## 2. 高層設計
-- 一句話架構：...
-- 組件圖：Mermaid/ASCII 其一
-
-## 3. 必要 API 契約
-| 方法 | 路徑 | 說明 | 請求 | 回應 | 錯誤 |
-| :-- | :-- | :-- | :-- | :-- | :-- |
-
-## 4. 資料表 Schema
-```sql
--- 最小必要表
-```
-
-## 5. 風險與手動替代方案
-| 風險 | 影響 | 替代/回退 |
-| :-- | :-- | :-- |
-
-## 6. MVP 迭代計劃
-- 迭代 1：...
-- 迭代 2：...
-- 迭代 3：...
-
-## 7. 部署與監控（最小）
-- 部署：Docker/Compose
-- 監控：/health、基本日誌
-- 備份：每日快照
-
-## 8. Gate 通過標準
-- ...
-```
-
-### 8.3 開發進度報告結構規範（docs/dev/development_progress_report.md）
-- 目的：對齊迭代節奏與交付透明度，為決策提供依據。
-- 頁首中繼資料（建議雙語一致性）：
-  - `更新日期`（或 Date）、`開發狀態`（或 Status）、`完成度`（或 Completion）、`Mode`、`Iteration`、`Owner(s)`
-- 必要章節與順序：
-  1. 總體進度概覽（當前里程碑、實際進度、當前任務）
-  2. 開發進度時間軸（Mermaid Gantt）
-  3. 已完成功能模組（列出關鍵檔案路徑）
-  4. 開發中功能（預計完成日期、進度 %、規劃檔案）
-  5. 前端開發進度（頁面/路由/組件/狀態；所依賴 API 與對應 Spec 條目）
-  6. 待開發功能（短期 Backlog）
-  7. 測試與品質保證（已實現/規劃）
-  8. 系統部署狀態（開發/生產）
-  9. 關鍵技術指標（效能、品質）
-  10. 下階段重點（立即任務、短期目標）
-  11. 技術債務與風險（表格化）
-  12. 成功指標追蹤（與 Tech Spec KPI 對齊）
-- 接受標準（Report DoD）：
-  - 每迭代至少更新一次；完成/進行中/待辦對齊 Tech Spec 範圍
-  - Mermaid 甘特圖時間與里程碑一致；檔案清單能對應到實際路徑
-  - 指標欄位（例如 API 響應時間）有具體數值或「未測」標註
-  - 前端開發進度包含每個核心頁面的狀態與對應 API，名稱需與 Spec 一致
-
-- Report 骨架（可複製改寫）：
-
-```markdown
-# [專案] - 開發進度報告
-> 更新日期: YYYY-MM-DD  
-> 開發狀態: 第一迭代開發中  
-> 完成度: 0-100%  
-> Mode: MVP  
-> Iteration: N  
-> Owner(s): 姓名A  
-
-## 📊 總體進度概覽
-- 當前里程碑：...
-- 實際進度：...
-- 當前任務：...
-
-## 📈 開發進度時間軸
-```mermaid
-gantt
-  dateFormat YYYY-MM-DD
-  section 迭代N
-  任務A :done, a, 2025-01-01, 1d
-  任務B :active, b, after a, 2d
-```
-
-## ✅ 已完成功能模組
-- 模組與路徑清單
-
-## 🔄 開發中功能
-- 預計完成、進度%、關聯檔案
-
-## 📋 待開發功能
-- 短期 Backlog
-
-## 🧪 測試與品質保證
-- 已實現/規劃
-
-## 🚀 系統部署狀態
-- 開發/生產
-
-## 📊 關鍵技術指標
-- 效能/品質數據
-
-## 🎯 下階段開發重點
-- 近期任務
-
-## ⚠️ 技術債務與風險
-- 表格
-
-## 📈 成功指標追蹤
-- 與 Tech Spec KPI 對齊
-```
-
-### 8.4 MVP 輕量上線檢查清單（docs/launch/mvp_launch_checklist.md）
-- 必要條目（最小）：
-  - 備份策略已生效（資料庫/檔案）
-  - 監控/健康檢查端點可用；日誌可查詢
-  - 部署/回滾步驟可操作（Runbook 級）
-  - 風險與手動替代方案已被納入運營預案
-
-### 8.5 一致性規則（強制）
-- 章節順序固定；新增內容需掛載到對應章節，不得另起未定義章節名稱
-- API 契約與 Schema 採用本文標準表示法其一，全文風格需一致
-- 指標/KPI 在兩份文件內名稱一致（避免「平均響應時間」與「API 響應時間」混用）
-- Mermaid 或 ASCII 均可，但一份文件內只選一種流程圖風格
-
-### 8.6 版本與變更治理
-- 版本於頁首維護，採語義化（MAJOR.MINOR.PATCH）
-- 每次提交需附簡短變更項摘要；重大變更需建立/更新對應 ADR（若牽涉設計權衡）
+#### 8.2.4 版本與變更治理 (Versioning & Governance)
+- 版本號 **必須 (MUST)** 遵循語義化版本（MAJOR.MINOR.PATCH）。
+- Git 提交紀錄 **應 (SHOULD)** 包含簡短的變更摘要。
+- 涉及重大設計權衡的變更 **必須 (MUST)** 建立或更新對應的 ADR。
 
 ---
 
-指引落地說明：
-- 目前的 `docs/planning/mvp_tech_spec.md` 與 `docs/dev/development_progress_report.md` 已基本符合上述結構。後續編輯請遵循第 8 節格式，以免產生規劃與執行的不一致。若新增端點/資料表/模組，請同步更新兩份文件中的對應章節與指標名稱，確保一致性。
+### 8.3 文件結構範本 (Document Structure & Skeletons)
+
+此處提供三份核心文件的結構、驗收標準 (DoD) 與骨架，可直接複製使用。
+
+#### 8.3.1 `mvp_tech_spec.md` - MVP 技術規格
+
+> **目的：** 作為開發與審查的唯一契約。若與其他文檔衝突，以此為準。
+
+- **必要章節 (Required Sections):**
+  1.  `問題陳述與目標用戶` (Problem & Users)
+  2.  `高層設計` (High-Level Design)
+  3.  `必要 API 契約` (API Contracts)
+  4.  `資料表 Schema` (Data Schema)
+  5.  `前端範圍與路由` (Frontend Scope & Routes)
+  6.  `風險與手動替代方案` (Risks & Mitigations)
+  7.  `部署與監控` (Deployment & Monitoring)
+  8.  `Gate 通過標準` (Go-Live Criteria)
+
+- **驗收標準 (Definition of Done):**
+  - [ ] KPI ≤ 3 且可量測。
+  - [ ] 核心 API 與 Schema 完整且相互對齊。
+  - [ ] 前端頁面/路由與其依賴的 API 已清楚對應。
+  - [ ] 風險表已包含可行的手動替代或回退方案。
+  - [ ] Gate 條件為客觀、可驗證的指標。
+
+- **骨架 (Skeleton):**
+  ```markdown
+  # [專案名稱] - MVP Tech Spec
+  > Version: 1.0.0
+  > Date: YYYY-MM-DD
+  > Status: Draft
+  > Owner(s): [姓名 (角色)]
+
+  ## 1. 問題陳述與目標用戶
+  - **核心問題:** ...
+  - **目標用戶:** ...
+  - **成功指標 (KPIs):** 1. ... 2. ... 3. ...
+
+  ## 2. 高層設計
+  - **一句話架構:** ...
+  - **組件圖:**
+    ```mermaid
+    graph TD
+      A --> B
+    ```
+
+  ## 3. 必要 API 契約
+  | 方法 | 路徑 | 說明 | 請求 | 回應 | 錯誤碼 |
+  | :--- | :--- | :--- | :--- | :--- | :--- |
+  | POST | /api/v1/... | ...  | ...  | ...  | 4xx/5xx |
+
+  ## 4. 資料表 Schema
+  ```sql
+  CREATE TABLE ...
+  ```
+
+  ## 5. 前端範圍與路由
+  | 頁面/路由 | 依賴 API | 核心組件 |
+  | :--- | :--- | :--- |
+  | /login | `POST /api/v1/auth` | `LoginForm` |
+
+  ## 6. 風險與手動替代方案
+  | 風險分類 | 描述 | 替代/回退方案 |
+  | :--- | :--- | :--- |
+  | 技術 | ... | ... |
+
+  ## 7. 部署與監控
+  - **部署:** ...
+  - **監控:** ...
+
+  ## 8. Gate 通過標準
+  - ...
+  ```
+
+#### 8.3.2 `development_progress_report.md` - 開發進度報告
+
+> **目的：** 對齊迭代節奏與交付透明度，為跨職能決策提供依據。
+
+- **必要章節 (Required Sections):**
+  1. `總體進度概覽` (Overall Progress)
+  2. `開發進度時間軸 (Gantt)` (Timeline)
+  3. `功能開發狀態` (Feature Status)
+  4. `前端開發進度` (Frontend Progress)
+  5. `關鍵技術指標` (Key Metrics)
+  6. `下階段重點` (Next Steps)
+  7. `技術債務與風險` (Risks & Tech Debt)
+  8. `成功指標追蹤 (KPIs)` (KPI Tracking)
+
+- **驗收標準 (Definition of Done):**
+  - [ ] 每週或每個迭代至少更新一次。
+  - [ ] 甘特圖時間軸與里程碑一致。
+  - [ ] 指標欄位有具體數值或標示為 `N/A`。
+  - [ ] 前端進度與 `mvp_tech_spec.md` 中的 API 依賴對齊。
+
+- **骨架 (Skeleton):**
+  ```markdown
+  # [專案名稱] - 開發進度報告
+  > 更新日期: YYYY-MM-DD
+  > 開發狀態: In Progress
+  > 完成度: XX%
+  > Iteration: N
+
+  ## 📊 總體進度概覽
+  - **當前里程碑:** ...
+  - **實際進度:** ...
+
+  ## 📈 開發進度時間軸
+  ```mermaid
+  gantt
+    ...
+  ```
+
+  ## ✅ 功能開發狀態 (已完成 / 開發中 / 待辦)
+  - ...
+
+  ## 🖥️ 前端開發進度
+  - ...
+
+  ## 📊 關鍵技術指標
+  | 指標 | 當前值 | 目標值 |
+  | :--- | :--- | :--- |
+  | API Response Time | 120ms | < 200ms |
+
+  ## 🎯 下階段開發重點
+  - ...
+
+  ## ⚠️ 技術債務與風險
+  - ...
+
+  ## 📈 成功指標追蹤 (KPIs)
+  - ...
+  ```
+
+#### 8.3.3 `mvp_launch_checklist.md` - MVP 輕量上線檢查清單
+
+> **目的：** 確保 MVP 上線前的最小品質與運維準備就緒，作為 Go/No-Go 的最終決策依據。
+
+- **必要條目 (Required Items):**
+  - **[ ] 備份 (Backup):** 資料庫與檔案系統的自動備份策略已啟用並驗證。
+  - **[ ] 監控 (Monitoring):** `/health` 健康檢查端點可用，核心錯誤日誌已接入告警系統。
+  - **[ ] 運維 (Operations):** 標準部署與回滾流程已寫入 `Runbook` 並完成演練。
+  - **[ ] 風險 (Risk):** 已知風險的手動替代方案已通知相關運維與客服團隊。
+  - **[ ] 安全 (Security):** 所有 `Secrets` (密碼、API Key) 已從程式碼中移除，並由配置中心管理。
